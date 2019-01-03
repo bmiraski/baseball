@@ -30,9 +30,10 @@ for year in years:
 
 teams['decade'] = decades
 
-hr_data = teams.groupby('decade').agg({'G': 'sum', 'HR': 'sum'})
+hr_data = teams.groupby('decade').agg({'G': 'sum', 'HR': 'sum', 'SO': 'sum'})
 
 hr_data['G'] = hr_data['G'] / 2  # divide by 2 to not double count games
-hr_data['rate'] = hr_data['HR'] / hr_data['G']
+hr_data['HR Rate'] = hr_data['HR'] / hr_data['G']
+hr_data['SO Rate'] = hr_data['SO'] / hr_data['G']
 
 print(hr_data)
