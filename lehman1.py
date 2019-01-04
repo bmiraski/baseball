@@ -1,4 +1,4 @@
-"""Solve Chapter 1 of Analyzing Baseball in R, in python."""
+"""Solve Chapter 1 Lehman of Analyzing Baseball in R, in python."""
 
 from bokeh.io import output_file
 from bokeh.plotting import figure, show
@@ -18,7 +18,89 @@ def custom_range(x, y, step):
         x += step
     return ran
 
+
+def add_cum_HR(df):
+    """Add a cumulative HR column to a dataframe."""
+    cum_hr_list = []
+    hr_list = df['HR']
+    cum_hr = 0
+    for season in hr_list:
+        cum_hr += season
+        cum_hr_list.append(cum_hr)
+    df['Cumulative HR'] = cum_hr_list
+    return df
+
 output_file('chapter1_2.html')
+
+# Begin Home Run Chase reproduction
+
+batting = pd.read_csv('data/lehman/baseballdatabank-master/core/Batting.csv')
+
+print(batting.head())
+ruth = batting[batting['playerID'] == 'ruthba01']
+aaron = batting[batting['playerID'] == 'aaronha01']
+bonds = batting[batting['playerID'] == 'bondsba01']
+arod = batting[batting['playerID'] == 'rodrial01']
+
+# MLB determines age on June 30. Setting effective "birth year" for HR leaders.
+
+ruth['birthYear'] = 1895
+aaron['birthYear'] = 1934
+bonds['birthYear'] = 1965  # Actual year 1964
+arod['birthYear'] = 1976  # Actual year 1975
+
+# Add age column to HR
+
+ruth['Age'] = ruth['yearID'] - ruth['birthYear']
+aaron['Age'] = aaron['yearID'] - aaron['birthYear']
+bonds['Age'] = bonds['yearID'] - bonds['birthYear']
+arod['Age'] = arod['yearID'] - arod['birthYear']
+
+# Add cumulative HR column
+ruth = add_cum_HR(ruth)
+aaron = add_cum_HR(aaron)
+bonds = add_cum_HR(bonds)
+arod = add_cum_HR(arod)
+
+hr_king = figure(background_fill_color='gray',
+                 background_fill_alpha=0.5,
+                 border_fill_color='blue',
+                 border_fill_alpha=0.25,
+                 plot_height=500,
+                 plot_width=800,
+                 h_symmetry=True,
+                 x_axis_label='Age',
+                 x_axis_type='linear',
+                 x_axis_location='below',
+                 x_range=(16, 43),
+                 y_axis_label='Career HR',
+                 y_axis_type='linear',
+                 y_axis_location='left',
+                 y_range=(0, 775),
+                 title='Race to be the Home Run King',
+                 title_location='above',
+                 toolbar_location=None)
+
+hr_king.xaxis.major_label_orientation = math.pi/4
+
+ruth_cds = ColumnDataSource(ruth)
+aaron_cds = ColumnDataSource(aaron)
+bonds_cds = ColumnDataSource(bonds)
+arod_cds = ColumnDataSource(arod)
+
+hr_king.line('Age', 'Cumulative HR', color='#000000',
+             legend='Babe Ruth', source=ruth_cds)
+hr_king.line('Age', 'Cumulative HR', color='#006BB6',
+             legend='Hank Aaron', source=aaron_cds)
+hr_king.line('Age', 'Cumulative HR', color='#FFA500',
+             legend='Barry Bonds', source=bonds_cds)
+hr_king.line('Age', 'Cumulative HR', color='#CE1141',
+             legend='Alex Rodriguez', source=arod_cds)
+
+hr_king.legend.location = 'bottom_right'
+
+# Begin Question #1 solution
+
 fig = figure(background_fill_color='gray',
              background_fill_alpha=0.5,
              border_fill_color='blue',
@@ -38,25 +120,17 @@ fig = figure(background_fill_color='gray',
              title_location='above',
              toolbar_location=None)
 
+# Make the x-axis look a little nicer.
 fig.xaxis.ticker = FixedTicker(ticks=custom_range(1860, 2020, 10))
 fig.xaxis.major_label_orientation = math.pi/4
 
-# master = pd.read_csv('data/lehman/baseballdatabank-master/core/Master.csv')
-
-# columns = master.columns
-# print(master.head(1))
-# print(columns)
-
-# batting = pd.read_csv('data/lehman/baseballdatabank-master/core/Batting.csv')
-# columns_batting = batting.columns
-
-# print(batting.head(1))
-# print(columns_batting)
 
 teams = pd.read_csv('data/lehman/baseballdatabank-master/core/Teams.csv')
 
+# Cast yearID to a Float to facilitate math
 teams['yearID'] = teams['yearID'].astype(float)
 
+# Use yearID to determine Decade.
 years = teams['yearID']
 
 decades = []
@@ -66,6 +140,7 @@ for year in years:
 
 teams['decade'] = decades
 
+# Cast yearID back to integer
 teams['yearID'] = teams['yearID'].astype(int)
 
 hr_data = teams.groupby('decade').agg({'G': 'sum', 'HR': 'sum', 'SO': 'sum'})
@@ -86,7 +161,6 @@ fig.line('decade', 'SO Rate',
 fig.legend.location = 'top_left'
 
 print(hr_data)
-# show(fig)
 
 # Begin solution to analyzing effect of DH on run scoring.
 
@@ -138,8 +212,50 @@ dh_label = Label(angle=90, angle_units='deg', text='DH Starts', x=1972,
 run_data.add_layout(dh)
 run_data.add_layout(dh_label)
 
+# Begin starting pitcher question
+
+pitch = pd.read_csv('data/lehman/baseballdatabank-master/core/Pitching.csv')
+
+start_pitch = pitch[pitch['GS'] > 0]
+
+start_pitch = start_pitch.groupby('yearID').agg({'GS': 'sum', 'CG': 'sum'})
+
+start_pitch['CG Pct'] = start_pitch['CG'] / start_pitch['GS']
+
+print(start_pitch.head())
+print(start_pitch.tail())
+
+pitch_fig = figure(background_fill_color='gray',
+                   background_fill_alpha=0.5,
+                   border_fill_color='blue',
+                   border_fill_alpha=0.25,
+                   plot_height=500,
+                   plot_width=800,
+                   h_symmetry=True,
+                   x_axis_label='Year',
+                   x_axis_type='linear',
+                   x_axis_location='below',
+                   x_range=(1870, 2020),
+                   y_axis_label='Complete Game Percentage',
+                   y_axis_type='linear',
+                   y_axis_location='left',
+                   y_range=(0, 1),
+                   title='Percentage of games completed by starters per Year',
+                   title_location='above',
+                   toolbar_location=None)
+
+pitch_fig.xaxis.major_label_orientation = math.pi/4
+
+pitch_cds = ColumnDataSource(start_pitch)
+
+pitch_fig.line('yearID', 'CG Pct', color='#006BB6', source=pitch_cds)
+
+# Begin graphing panels
+
+king_panel = Panel(child=hr_king, title='Home Run King')
 hr_panel = Panel(child=fig, title='HR and SO by decade')
 run_panel = Panel(child=run_data, title='Run Scoring by League')
-tabs = Tabs(tabs=[hr_panel, run_panel])
+start_panel = Panel(child=pitch_fig, title='Complete Game Percentage')
+tabs = Tabs(tabs=[king_panel, hr_panel, run_panel, start_panel])
 
 show(tabs)
