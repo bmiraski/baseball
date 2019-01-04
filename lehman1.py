@@ -18,25 +18,12 @@ def custom_range(x, y, step):
         x += step
     return ran
 
-
-def add_cum_HR(df):
-    """Add a cumulative HR column to a dataframe."""
-    cum_hr_list = []
-    hr_list = df['HR']
-    cum_hr = 0
-    for season in hr_list:
-        cum_hr += season
-        cum_hr_list.append(cum_hr)
-    df['Cumulative HR'] = cum_hr_list
-    return df
-
 output_file('chapter1_2.html')
 
 # Begin Home Run Chase reproduction
 
 batting = pd.read_csv('data/lehman/baseballdatabank-master/core/Batting.csv')
 
-print(batting.head())
 ruth = batting[batting['playerID'] == 'ruthba01']
 aaron = batting[batting['playerID'] == 'aaronha01']
 bonds = batting[batting['playerID'] == 'bondsba01']
@@ -56,11 +43,11 @@ aaron['Age'] = aaron['yearID'] - aaron['birthYear']
 bonds['Age'] = bonds['yearID'] - bonds['birthYear']
 arod['Age'] = arod['yearID'] - arod['birthYear']
 
-# Add cumulative HR column
-ruth = add_cum_HR(ruth)
-aaron = add_cum_HR(aaron)
-bonds = add_cum_HR(bonds)
-arod = add_cum_HR(arod)
+# Add cumulative HR column. Changed to use pandas builtin function
+ruth['Cumulative HR'] = ruth['HR'].cumsum()
+aaron['Cumulative HR'] = aaron['HR'].cumsum()
+bonds['Cumulative HR'] = bonds['HR'].cumsum()
+arod['Cumulative HR'] = arod['HR'].cumsum()
 
 hr_king = figure(background_fill_color='gray',
                  background_fill_alpha=0.5,
