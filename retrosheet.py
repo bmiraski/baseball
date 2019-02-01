@@ -153,6 +153,9 @@ park_fig.vbar(x='PARK_ID', top='AVG_HR', width=0.9, source=park_cds,
                                      factors=park_range))
 
 ump_cds = ColumnDataSource(ump_run)
+tooltip = [("Umpire", "@BASE4_UMP_ID"),
+           ("Home RPG", "@AVG_HOME"),
+           ("Visitor RPG", "@AVG_VIS")]
 
 ump_fig = figure(background_fill_color='gray',
                  background_fill_alpha=0.5,
@@ -171,6 +174,8 @@ ump_fig = figure(background_fill_color='gray',
                  y_range=(3.75, 5.25),
                  title='Home Plate Umpire Average Runs per game',
                  title_location='above',
+                 tools='hover',
+                 tooltips=tooltip,
                  toolbar_location=None)
 
 ump_fig.circle('AVG_HOME', 'AVG_VIS', size=20, color='#006BB6',
