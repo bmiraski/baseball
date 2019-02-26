@@ -1,5 +1,6 @@
 """Solve Retrosheet Exercises."""
 
+from bokeh.io import curdoc
 from bokeh.io import output_file
 from bokeh.models import ColumnDataSource
 from bokeh.models import Label
@@ -10,6 +11,7 @@ from bokeh.models.widgets import Tabs
 from bokeh.palettes import viridis
 from bokeh.plotting import figure
 from bokeh.plotting import show
+from bokeh.themes import Theme
 from bokeh.transform import factor_cmap
 
 from collections import defaultdict
@@ -18,7 +20,8 @@ import csv
 import math
 import pandas as pd
 
-output_file('retrosheet.html')
+output_file('retrosheet.html', title='Python Baseball | Retrosheet Exercises')
+curdoc().theme = Theme('baseball_theme.json')
 
 eighties = pd.read_csv('data/retrosheet/allgameex1980s.csv')
 nineties = pd.read_csv('data/retrosheet/allgameex1990s.csv')
@@ -93,22 +96,12 @@ day_attend['AVG_ATTEND'] = (day_attend['ATTEND_PARK_CT'] /
 day_attend = day_attend.sort_values('AVG_ATTEND', ascending=False)
 days = day_attend.index.tolist()
 
-mon_fig = figure(background_fill_color='gray',
-                 background_fill_alpha=0.5,
-                 border_fill_color='blue',
-                 border_fill_alpha=0.25,
-                 plot_height=500,
-                 plot_width=800,
-                 h_symmetry=True,
-                 x_axis_label='Month',
+mon_fig = figure(x_axis_label='Month',
                  x_range=month_names,
-                 x_axis_location='below',
                  y_axis_label='Avg. HR / Game',
                  y_axis_type='linear',
-                 y_axis_location='left',
                  y_range=(1.5, 2.25),
                  title='Avg. HR per game by Month, 1980-2017',
-                 title_location='above',
                  toolbar_location=None)
 
 mon_fig.xaxis.major_label_orientation = math.pi/4
@@ -124,22 +117,14 @@ mon_fig.add_layout(rate_label)
 
 park_range = park_hr.index.tolist()
 park_cds = ColumnDataSource(park_hr)
-park_fig = figure(background_fill_color='gray',
-                  background_fill_alpha=0.5,
-                  border_fill_color='blue',
-                  border_fill_alpha=0.25,
-                  plot_height=800,
+park_fig = figure(plot_height=800,
                   plot_width=1000,
-                  h_symmetry=True,
                   x_axis_label='Ballpark',
-                  x_axis_location='below',
                   x_range=park_range,
                   y_axis_label='Avg. HR / Game',
                   y_axis_type='linear',
-                  y_axis_location='left',
                   y_range=(0, 4),
                   title='Avg. HR per game by Ballpark, 1980-2017',
-                  title_location='above',
                   toolbar_location=None)
 
 park_fig.xgrid.grid_line_color = None
@@ -157,23 +142,13 @@ tooltip = [("Umpire", "@BASE4_UMP_ID"),
            ("Home RPG", "@AVG_HOME"),
            ("Visitor RPG", "@AVG_VIS")]
 
-ump_fig = figure(background_fill_color='gray',
-                 background_fill_alpha=0.5,
-                 border_fill_color='blue',
-                 border_fill_alpha=0.25,
-                 plot_height=800,
-                 plot_width=1000,
-                 h_symmetry=True,
-                 x_axis_label='Home Avg. Runs',
+ump_fig = figure(x_axis_label='Home Avg. Runs',
                  x_axis_type='linear',
-                 x_axis_location='below',
                  x_range=(4, 5.25),
                  y_axis_label='Visitor Avg. Runs',
                  y_axis_type='linear',
-                 y_axis_location='left',
                  y_range=(3.75, 5.25),
                  title='Home Plate Umpire Average Runs per game',
-                 title_location='above',
                  tools='hover',
                  tooltips=tooltip,
                  toolbar_location=None)
@@ -187,28 +162,16 @@ chuck = Label(x=5, y=5.04, text='Chuck Meriwether')
 ump_fig.add_layout(chuck)
 doug = Label(x=4.08, y=3.76, text='Doug Harvey')
 ump_fig.add_layout(doug)
-joe = Label(x=4.55, y=4.31, text='Joe West')
-# ump_fig.add_layout(joe)
 alfonso = Label(x=4.8, y=4.09, text='Alfonso Marquez')
 ump_fig.add_layout(alfonso)
 
 attend_cds = ColumnDataSource(day_attend)
-attend_fig = figure(background_fill_color='gray',
-                    background_fill_alpha=0.5,
-                    border_fill_color='blue',
-                    border_fill_alpha=0.25,
-                    plot_height=800,
-                    plot_width=1000,
-                    h_symmetry=True,
-                    x_axis_label='Day of the Week',
-                    x_axis_location='below',
+attend_fig = figure(x_axis_label='Day of the Week',
                     x_range=days,
                     y_axis_label='Avg. Attendance',
                     y_axis_type='linear',
-                    y_axis_location='left',
                     y_range=(24000, 33000),
                     title='Avg. Attendance by Day of the Week',
-                    title_location='above',
                     toolbar_location=None)
 
 attend_fig.xgrid.grid_line_color = None
