@@ -1,25 +1,22 @@
 """Solve Chapter 1 Lehman of Analyzing Baseball in R, in python."""
 
+from bokeh.io import curdoc
 from bokeh.io import output_file
-from bokeh.plotting import figure, show
-from bokeh.models import ColumnDataSource, Label, Span
-from bokeh.models.widgets import Tabs, Panel
+from bokeh.models import ColumnDataSource
+from bokeh.models import Label
+from bokeh.models import Span
 from bokeh.models.tickers import FixedTicker
-
+from bokeh.models.widgets import Panel
+from bokeh.models.widgets import Tabs
+from bokeh.plotting import figure
+from bokeh.plotting import show
+from bokeh.themes import Theme
 import math
 import pandas as pd
 
 
-def custom_range(x, y, step):
-    """Generate a list of numbers at a given interval."""
-    ran = []
-    while x <= y:
-        ran.append(x)
-        x += step
-    return ran
-
-output_file('chapter1_2.html')
-
+output_file('chapter1_2.html', title='Lehman Data Set Exercises')
+curdoc().theme = Theme('baseball_theme.json')
 # Begin Home Run Chase reproduction
 
 batting = pd.read_csv('data/lehman/baseballdatabank-master/core/Batting.csv')
@@ -28,6 +25,7 @@ ruth = batting[batting['playerID'] == 'ruthba01']
 aaron = batting[batting['playerID'] == 'aaronha01']
 bonds = batting[batting['playerID'] == 'bondsba01']
 arod = batting[batting['playerID'] == 'rodrial01']
+pujols = batting[batting['playerID'] == 'pujolal01']
 
 # MLB determines age on June 30. Setting effective "birth year" for HR leaders.
 
@@ -35,6 +33,7 @@ ruth['birthYear'] = 1895
 aaron['birthYear'] = 1934
 bonds['birthYear'] = 1965  # Actual year 1964
 arod['birthYear'] = 1976  # Actual year 1975
+pujols['birthYear'] = 1980
 
 # Add age column to HR
 
@@ -42,30 +41,22 @@ ruth['Age'] = ruth['yearID'] - ruth['birthYear']
 aaron['Age'] = aaron['yearID'] - aaron['birthYear']
 bonds['Age'] = bonds['yearID'] - bonds['birthYear']
 arod['Age'] = arod['yearID'] - arod['birthYear']
+pujols['Age'] = pujols['yearID'] - pujols['birthYear']
 
 # Add cumulative HR column. Changed to use pandas builtin function
 ruth['Cumulative HR'] = ruth['HR'].cumsum()
 aaron['Cumulative HR'] = aaron['HR'].cumsum()
 bonds['Cumulative HR'] = bonds['HR'].cumsum()
 arod['Cumulative HR'] = arod['HR'].cumsum()
+pujols['Cumulative HR'] = pujols['HR'].cumsum()
 
-hr_king = figure(background_fill_color='gray',
-                 background_fill_alpha=0.5,
-                 border_fill_color='blue',
-                 border_fill_alpha=0.25,
-                 plot_height=500,
-                 plot_width=800,
-                 h_symmetry=True,
-                 x_axis_label='Age',
+hr_king = figure(x_axis_label='Age',
                  x_axis_type='linear',
-                 x_axis_location='below',
                  x_range=(16, 43),
                  y_axis_label='Career HR',
                  y_axis_type='linear',
-                 y_axis_location='left',
                  y_range=(0, 775),
                  title='Race to be the Home Run King',
-                 title_location='above',
                  toolbar_location=None)
 
 hr_king.xaxis.major_label_orientation = math.pi/4
@@ -74,6 +65,7 @@ ruth_cds = ColumnDataSource(ruth)
 aaron_cds = ColumnDataSource(aaron)
 bonds_cds = ColumnDataSource(bonds)
 arod_cds = ColumnDataSource(arod)
+pujols_cds = ColumnDataSource(pujols)
 
 hr_king.line('Age', 'Cumulative HR', color='#000000',
              legend='Babe Ruth', source=ruth_cds)
@@ -83,32 +75,24 @@ hr_king.line('Age', 'Cumulative HR', color='#FFA500',
              legend='Barry Bonds', source=bonds_cds)
 hr_king.line('Age', 'Cumulative HR', color='#CE1141',
              legend='Alex Rodriguez', source=arod_cds)
+hr_king.line('Age', 'Cumulative HR', color='green',
+             legend='Albert Pujols', source=pujols_cds)
 
 hr_king.legend.location = 'bottom_right'
 
 # Begin Question #1 solution
 
-fig = figure(background_fill_color='gray',
-             background_fill_alpha=0.5,
-             border_fill_color='blue',
-             border_fill_alpha=0.25,
-             plot_height=500,
-             plot_width=800,
-             h_symmetry=True,
-             x_axis_label='Decade',
+fig = figure(x_axis_label='Decade',
              x_axis_type='linear',
-             x_axis_location='below',
              x_range=(1860, 2020),
              y_axis_label='Rate',
              y_axis_type='linear',
-             y_axis_location='left',
              y_range=(0, 20),
              title='Rate of HR and SO per game by Decade',
-             title_location='above',
              toolbar_location=None)
 
 # Make the x-axis look a little nicer.
-fig.xaxis.ticker = FixedTicker(ticks=custom_range(1860, 2020, 10))
+fig.xaxis.ticker = FixedTicker(ticks=list(range(1860, 2030, 10)))
 fig.xaxis.major_label_orientation = math.pi/4
 
 
@@ -160,23 +144,13 @@ nl_data = teams[teams['lgID'] == 'NL']
 nl_data = nl_data.groupby('yearID').agg({'G': 'sum', 'R': 'sum'})
 nl_data['R per G'] = nl_data['R'] / nl_data['G']
 
-run_data = figure(background_fill_color='gray',
-                  background_fill_alpha=0.5,
-                  border_fill_color='blue',
-                  border_fill_alpha=0.25,
-                  plot_height=500,
-                  plot_width=800,
-                  h_symmetry=True,
-                  x_axis_label='Year',
+run_data = figure(x_axis_label='Year',
                   x_axis_type='linear',
-                  x_axis_location='below',
                   x_range=(1870, 2020),
                   y_axis_label='Runs per Team per Game',
                   y_axis_type='linear',
-                  y_axis_location='left',
                   y_range=(2, 8),
                   title='Average Runs Scored per Game by Team, AL vs. NL',
-                  title_location='above',
                   toolbar_location=None)
 
 run_data.xaxis.major_label_orientation = math.pi/4
@@ -212,23 +186,13 @@ start_pitch['CG Pct'] = start_pitch['CG'] / start_pitch['GS']
 print(start_pitch.head())
 print(start_pitch.tail())
 
-pitch_fig = figure(background_fill_color='gray',
-                   background_fill_alpha=0.5,
-                   border_fill_color='blue',
-                   border_fill_alpha=0.25,
-                   plot_height=500,
-                   plot_width=800,
-                   h_symmetry=True,
-                   x_axis_label='Year',
+pitch_fig = figure(x_axis_label='Year',
                    x_axis_type='linear',
-                   x_axis_location='below',
                    x_range=(1870, 2020),
                    y_axis_label='Complete Game Percentage',
                    y_axis_type='linear',
-                   y_axis_location='left',
                    y_range=(0, 1),
                    title='Percentage of games completed by starters per Year',
-                   title_location='above',
                    toolbar_location=None)
 
 pitch_fig.xaxis.major_label_orientation = math.pi/4
