@@ -15,6 +15,31 @@ import pandas as pd
 
 output_file('ch3ex.html', title='HOF Pitching Exercises')
 curdoc().theme = Theme('baseball_theme.json')
+
+master = pd.read_csv('data/lehman/baseballdatabank-master/core/Master.csv',
+                     index_col='playerID')
+
+
+def getPlayerNames(idlist, masterdf):
+    """Retrieve the full player names from the Master Data file."""
+    player_names = []
+    for player in idlist:
+        name = (str(masterdf.loc[player].nameFirst) + " " +
+                str(masterdf.loc[player].nameLast))
+        player_names.append(name)
+    return player_names
+
+
+def addAges(df):
+    """Calculate and add player age to dataframe."""
+    playerid = df.index[0]
+    birthyear = master.loc[playerid].birthYear
+    birthmonth = master.loc[playerid].birthMonth
+    if birthmonth >= 7:
+        birthyear += 1
+    df['Age'] = df['yearID'] - birthyear
+    return df
+
 hofpitch = pd.read_csv('data/general/hofpitching.csv')
 
 bins = [0, 10000, 15000, 20000, 30000]
@@ -42,6 +67,51 @@ print(warg)
 
 mid60 = hofpitch['MidCareer'] >= 1960
 hofp1960 = hofpitch.loc[mid60].copy().sort_values('WAR/Yr')
+
+batting = pd.read_csv('data/lehman/baseballdatabank-master/core/Batting.csv',
+                      index_col='playerID')
+
+rose = batting.loc['rosepe01'].copy()  # Pete Rose: rosepe01
+williams = batting.loc['willite01'].copy()  # Ted Williams: willite01
+cobb = batting.loc['cobbty01'].copy()  # Ty Cobb: cobbty01
+ichiro = batting.loc['suzukic01'].copy()  # Ichiro Suzuki: suzukic01
+
+rose = addAges(rose)
+williams = addAges(williams)
+cobb = addAges(cobb)
+ichiro = addAges(ichiro)
+
+rose['CareerHits'] = rose['H'].cumsum()
+williams['CareerHits'] = williams['H'].cumsum()
+cobb['CareerHits'] = cobb['H'].cumsum()
+ichiro['CareerHits'] = ichiro['H'].cumsum()
+
+rose_cds = ColumnDataSource(rose)
+williams_cds = ColumnDataSource(williams)
+cobb_cds = ColumnDataSource(cobb)
+ichiro_cds = ColumnDataSource(ichiro)
+
+# ids = batting['playerID'].to_list()
+# batting['PlayerName'] = getPlayerNames(ids, master)
+# print(batting.head())
+
+hitking_fig = figure(x_axis_label='Player Age',
+                     x_range=(16, 46),
+                     y_axis_label='Career Hits',
+                     y_range=(0, 4300),
+                     title='Hit King Race',
+                     toolbar_location=None)
+
+hitking_fig.line(x='Age', y='CareerHits', color='#f70f55', legend='Pete Rose',
+                 source=rose_cds)
+hitking_fig.line(x='Age', y='CareerHits', color='#0c12b1',
+                 legend='Ted Williams', source=williams_cds)
+hitking_fig.line(x='Age', y='CareerHits', color='#d57e0b',
+                 legend='Ty Cobb', source=cobb_cds)
+hitking_fig.line(x='Age', y='CareerHits', color='#20ab57',
+                 legend='Ichiro', source=ichiro_cds)
+
+hitking_fig.legend.location = 'bottom_right'
 
 hofbf_fig = figure(x_axis_label='Batters Faced',
                    x_range=labels,
@@ -106,11 +176,12 @@ midwar_fig = figure(x_axis_label='Midyear of Career',
 midwar_fig.circle(x='MidCareer', y='WAR/Yr', radius=1, alpha=0.6,
                   color='#aa167e', source=hofpitch_cds)
 
+hitking_panel = Panel(child=hitking_fig, title='Hit King Race')
 midwar_panel = Panel(child=midwar_fig, title='MidCareer WAR')
 p60_panel = Panel(child=p60_fig, title="Post '60 WAR/Yr")
 waryr_panel = Panel(child=waryr_fig, title='WAR/Yr vs. Batters Faced')
 hofwar_panel = Panel(child=hofwar_fig, title='HOF Pitcher WAR')
 hofbf_panel = Panel(child=hofbf_fig, title='HOF Batters Faced')
 tabs = Tabs(tabs=[hofbf_panel, hofwar_panel, waryr_panel, p60_panel,
-                  midwar_panel])
+                  midwar_panel, hitking_panel])
 show(tabs)
