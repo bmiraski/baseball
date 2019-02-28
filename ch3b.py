@@ -20,16 +20,6 @@ master = pd.read_csv('data/lehman/baseballdatabank-master/core/Master.csv',
                      index_col='playerID')
 
 
-def getPlayerNames(idlist, masterdf):
-    """Retrieve the full player names from the Master Data file."""
-    player_names = []
-    for player in idlist:
-        name = (str(masterdf.loc[player].nameFirst) + " " +
-                str(masterdf.loc[player].nameLast))
-        player_names.append(name)
-    return player_names
-
-
 def addAges(df):
     """Calculate and add player age to dataframe."""
     playerid = df.index[0]
@@ -90,10 +80,6 @@ rose_cds = ColumnDataSource(rose)
 williams_cds = ColumnDataSource(williams)
 cobb_cds = ColumnDataSource(cobb)
 ichiro_cds = ColumnDataSource(ichiro)
-
-# ids = batting['playerID'].to_list()
-# batting['PlayerName'] = getPlayerNames(ids, master)
-# print(batting.head())
 
 hitking_fig = figure(x_axis_label='Player Age',
                      x_range=(16, 46),
