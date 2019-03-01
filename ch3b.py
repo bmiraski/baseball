@@ -9,6 +9,7 @@ from bokeh.models.widgets import Tabs
 from bokeh.plotting import figure
 from bokeh.plotting import show
 from bokeh.themes import Theme
+from bokeh.transform import dodge
 import math
 import numpy as np
 import pandas as pd
@@ -75,6 +76,59 @@ rose['CareerHits'] = rose['H'].cumsum()
 williams['CareerHits'] = williams['H'].cumsum()
 cobb['CareerHits'] = cobb['H'].cumsum()
 ichiro['CareerHits'] = ichiro['H'].cumsum()
+
+# Read in Retrosheet data from 1998, and add GameDate col as a datetime.
+event1998 = pd.read_csv('data/retrosheet/unzipped/1998eve/all1998.csv',
+                        index_col='BAT_ID')
+event1998['GAME_DATE'] = event1998['GAME_ID'].str.slice(3, 11)
+event1998['GAME_DATE'] = pd.to_datetime(event1998['GAME_DATE'],
+                                        infer_datetime_format=True)
+batevent = event1998['BAT_EVENT_FL'] == 'T'
+batevents = event1998[batevent].copy()
+
+sosa = batevents.loc['sosas001'].copy()
+sosa = sosa.sort_values(['GAME_DATE', 'EVENT_ID'])
+sosa_pa = list(range(1, len(sosa) + 1))
+sosa['PA'] = sosa_pa
+sshr = sosa['EVENT_CD'] == 23
+sosa_hr = sosa[sshr].copy()
+ss_hr_pa = np.array(sosa_hr['PA'])
+ss_hr_pa = np.insert(ss_hr_pa, 0, 0)
+ss_hr_diff = np.diff(ss_hr_pa)
+ss_hr_df = pd.DataFrame({'Sosa': ss_hr_diff})
+ss_gb = ss_hr_df.groupby('Sosa').size()
+
+mcgwire = event1998.loc['mcgwm001'].copy()
+mcgwire = mcgwire.sort_values(['GAME_DATE', 'EVENT_ID'])
+mcgwire_pa = list(range(1, len(mcgwire) + 1))
+mcgwire['PA'] = mcgwire_pa
+mmhr = mcgwire['EVENT_CD'] == 23
+mcgwire_hr = mcgwire[mmhr].copy()
+mm_hr_pa = np.array(mcgwire_hr['PA'])
+mm_hr_pa = np.insert(mm_hr_pa, 0, 0)
+mm_hr_diff = np.diff(mm_hr_pa)
+mm_hr_df = pd.DataFrame({'McGwire': mm_hr_diff})
+mm_gb = mm_hr_df.groupby('McGwire').size()
+
+diffs = pd.concat([ss_gb, mm_gb], axis=1).fillna(0).reset_index()
+diffs.columns = ['DIFF', 'SS_OCC', 'MM_OCC']
+print(diffs)
+
+diffs_cds = ColumnDataSource(diffs)
+
+hrdiff_fig = figure(x_axis_label='PA Difference',
+                    x_range=(0, 55),
+                    y_axis_label='Occurences',
+                    y_range=(0, 12),
+                    title='1998 HR Race by Gaps between HRs',
+                    toolbar_location=None)
+
+hrdiff_fig.vbar(x=dodge('DIFF', -0.25), top='SS_OCC', width=0.3,
+                color='#006BB6', source=diffs_cds, legend='Sammy Sosa')
+hrdiff_fig.vbar(x=dodge('DIFF', 0.25), top='MM_OCC', width=0.3,
+                color='#CE1141', source=diffs_cds, legend='Mark McGwire')
+
+hrdiff_fig.legend.location = 'top_right'
 
 rose_cds = ColumnDataSource(rose)
 williams_cds = ColumnDataSource(williams)
@@ -162,6 +216,7 @@ midwar_fig = figure(x_axis_label='Midyear of Career',
 midwar_fig.circle(x='MidCareer', y='WAR/Yr', radius=1, alpha=0.6,
                   color='#aa167e', source=hofpitch_cds)
 
+hrrace_panel = Panel(child=hrdiff_fig, title='1998 HR Diffs')
 hitking_panel = Panel(child=hitking_fig, title='Hit King Race')
 midwar_panel = Panel(child=midwar_fig, title='MidCareer WAR')
 p60_panel = Panel(child=p60_fig, title="Post '60 WAR/Yr")
@@ -169,5 +224,5 @@ waryr_panel = Panel(child=waryr_fig, title='WAR/Yr vs. Batters Faced')
 hofwar_panel = Panel(child=hofwar_fig, title='HOF Pitcher WAR')
 hofbf_panel = Panel(child=hofbf_fig, title='HOF Batters Faced')
 tabs = Tabs(tabs=[hofbf_panel, hofwar_panel, waryr_panel, p60_panel,
-                  midwar_panel, hitking_panel])
+                  midwar_panel, hitking_panel, hrrace_panel])
 show(tabs)

@@ -1,10 +1,12 @@
 """Track 1998 HR battle."""
 
 from bokeh.io import output_file
-from bokeh.plotting import figure, show
-from bokeh.models import ColumnDataSource, Label, Span
-from bokeh.models.widgets import Tabs, Panel
-from bokeh.models.tickers import FixedTicker
+from bokeh.models import ColumnDataSource
+from bokeh.models import Span
+from bokeh.models.widgets import Panel
+from bokeh.models.widgets import Tabs
+from bokeh.plotting import figure
+from bokeh.plotting import show
 
 import math
 import pandas as pd
@@ -18,8 +20,6 @@ event1998['GAME_DATE'] = pd.to_datetime(event1998['GAME_DATE'],
                                         infer_datetime_format=True)
 event1998 = event1998.set_index('BAT_ID')
 event1998_sorted = event1998.sort_index()
-print(event1998_sorted.head())
-
 
 # Extract Sosa/McGwire data and narrow to only HR events. Number events.
 
@@ -88,9 +88,6 @@ sosa_runner = sosa_hr[ss_runner]
 mcgwire_empty = mcgwire_hr[mm_empty]
 mcgwire_runner = mcgwire_hr[mm_runner]
 
-print(len(sosa_empty), len(sosa_runner), len(mcgwire_empty),
-      len(mcgwire_runner))
-
 x_labels = ['Sosa Empty', 'McGwire Empty', 'Sosa Runners On',
             'McGwire Runners On']
 
@@ -114,7 +111,7 @@ runners_fig = figure(background_fill_color='gray',
 runners_fig.xaxis.major_label_orientation = math.pi/2
 top_values = [len(sosa_empty), len(mcgwire_empty), len(sosa_runner),
               len(mcgwire_runner)]
-      
+
 runners_fig.vbar(x=x_labels, top=top_values,
                  fill_color=['#006BB6', '#CE1141', '#006BB6', '#CE1141'],
                  width=0.9)
