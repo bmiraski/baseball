@@ -17,31 +17,36 @@ import pandas as pd
 
 output_file('chapter1_2.html', title='Lehman Data Set Exercises')
 curdoc().theme = Theme('baseball_theme.json')
+master = pd.read_csv('data/lehman/baseballdatabank-master/core/Master.csv',
+                     index_col='playerID')
 # Begin Home Run Chase reproduction
 
-batting = pd.read_csv('data/lehman/baseballdatabank-master/core/Batting.csv')
 
-ruth = batting[batting['playerID'] == 'ruthba01']
-aaron = batting[batting['playerID'] == 'aaronha01']
-bonds = batting[batting['playerID'] == 'bondsba01']
-arod = batting[batting['playerID'] == 'rodrial01']
-pujols = batting[batting['playerID'] == 'pujolal01']
+def addAges(df):
+    """Calculate and add player age to dataframe."""
+    playerid = df.index[0]
+    birthyear = master.loc[playerid].birthYear
+    birthmonth = master.loc[playerid].birthMonth
+    if birthmonth >= 7:
+        birthyear += 1
+    df['Age'] = df['yearID'] - birthyear
+    return df
 
-# MLB determines age on June 30. Setting effective "birth year" for HR leaders.
 
-ruth['birthYear'] = 1895
-aaron['birthYear'] = 1934
-bonds['birthYear'] = 1965  # Actual year 1964
-arod['birthYear'] = 1976  # Actual year 1975
-pujols['birthYear'] = 1980
+batting = pd.read_csv('data/lehman/baseballdatabank-master/core/Batting.csv',
+                      index_col='playerID')
 
-# Add age column to HR
+ruth = batting.loc['ruthba01'].copy()
+aaron = batting.loc['aaronha01'].copy()
+bonds = batting.loc['bondsba01'].copy()
+arod = batting.loc['rodrial01'].copy()
+pujols = batting.loc['pujolal01'].copy()
 
-ruth['Age'] = ruth['yearID'] - ruth['birthYear']
-aaron['Age'] = aaron['yearID'] - aaron['birthYear']
-bonds['Age'] = bonds['yearID'] - bonds['birthYear']
-arod['Age'] = arod['yearID'] - arod['birthYear']
-pujols['Age'] = pujols['yearID'] - pujols['birthYear']
+ruth = addAges(ruth)
+aaron = addAges(aaron)
+bonds = addAges(bonds)
+arod = addAges(arod)
+pujols = addAges(pujols)
 
 # Add cumulative HR column. Changed to use pandas builtin function
 ruth['Cumulative HR'] = ruth['HR'].cumsum()
