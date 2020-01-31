@@ -5,12 +5,42 @@ import pandas as pd
 
 batting = pd.read_csv('data/lehman/baseballdatabank-master/core/Batting.csv',
                       index_col='playerID')
-people = pd.read_csv('data/lehman/baseballdatabank-master/core/Master.csv',
+people = pd.read_csv('data/lehman/baseballdatabank-master/core/People.csv',
                      index_col='playerID')
+lgavg = pd.read_csv('data/lgavg162.csv')
 
-player = 'russead02'
 
-merrifield = batting.loc[player, :].copy().set_index('yearID')
+def sub_player_data(data, m):
+    """Sub in league average data if player missing data."""
+    age_m = m - birth_year
+    if age_m <= 25:
+        age_block = 25
+    elif age_m <= 30:
+        age_block = 30
+    elif age_m <= 35:
+        age_block = 35
+    else:
+        age_block = 36
+    sub_data_m = lgavg[lgavg['Year'] == m]
+    sub_data_age = sub_data_m[sub_data_m['Age'] == age_block].copy()
+    print(sub_data_age)
+    sub_data_age['stint'] = 1
+    sub_data_age['Age'] = age_m
+    sub_data_age['PA'] = (sub_data_age['AB'] + sub_data_age['BB'] + sub_data_age['SF'] +
+                          sub_data_age['SH'] + sub_data_age['HBP'])
+    sub_data_age = sub_data_age.set_index(['Year'])
+    print(sub_data_age)
+    data = pd.concat([data, sub_data_age])
+    return data
+
+
+player = 'troutmi01'
+# harpebr03
+# troutmi01
+# rendoan01
+# merriwh01
+merrifield = batting.loc[[player]].copy().set_index('yearID')
+merrifield = merrifield.groupby('yearID').sum()
 league_rate = pd.read_csv('pa_rate.csv', index_col='Year')
 years = merrifield.index.values
 birth_year = people.loc[player, 'birthYear']
@@ -27,17 +57,31 @@ merrifield['PA'] = (merrifield['AB'] + merrifield['BB'] + merrifield['SF'] +
                     merrifield['SH'] + merrifield['HBP'])
 merrifield['Age'] = ages
 
-print(merrifield)
+merrifield_years = list(merrifield.index.values)
 
-pa_2016 = int(merrifield.loc[2016, 'PA'])  # 332
-pa_2017 = int(merrifield.loc[2017, 'PA'])  # 630
-pa_2018 = int(merrifield.loc[2018, 'PA'])  # 707
+model_year = 2020
+m3 = model_year - 3
+m2 = model_year - 2
+m1 = model_year - 1
 
-weighted_pa = (3 * pa_2016) + (4 * pa_2017) + (5 * pa_2018)
-projected_pa = round(((0.5 * pa_2018) + (0.1 * pa_2017) + 200), 0)
+if m3 not in merrifield_years:
+    merrifield = sub_player_data(merrifield, m3)
+
+if m2 not in merrifield_years:
+    merrifield = sub_player_data(merrifield, m2)
+
+if m1 not in merrifield_years:
+    merrifield = sub_player_data(merrifield, m1)
+
+print(merrifield.sort_values(by=['Age']))
+pa_m3 = int(merrifield.loc[m3, 'PA'])
+pa_m2 = int(merrifield.loc[m2, 'PA'])
+pa_m1 = int(merrifield.loc[m1, 'PA'])
+weighted_pa = (3 * pa_m3) + (4 * pa_m2) + (5 * pa_m1)
+projected_pa = round(((0.5 * pa_m1) + (0.1 * pa_m2) + 200), 0)
 print(f"Projected PAs: {projected_pa}")
 
-projected_age = int(merrifield.loc[2018, 'Age']) + 1
+projected_age = int(merrifield.loc[m1, 'Age']) + 1
 if projected_age > 30:
     age_adjustment = (29 - projected_age) * 0.003
 elif projected_age < 30:
@@ -50,20 +94,20 @@ columns = ['R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO', 'GIDP',
 
 projected_stats = []
 for col in columns:
-    stat_2016 = int(merrifield.loc[2016, col])
-    stat_2017 = int(merrifield.loc[2017, col])
-    stat_2018 = int(merrifield.loc[2018, col])
+    stat_m3 = int(merrifield.loc[m3, col])
+    stat_m2 = int(merrifield.loc[m2, col])
+    stat_m1 = int(merrifield.loc[m1, col])
 
-    weighted_stat = (3 * stat_2016) + (4 * stat_2017) + (5 * stat_2018)
+    weighted_stat = (3 * stat_m3) + (4 * stat_m2) + (5 * stat_m1)
     # print(weighted_stat)
 
-    lgstat_2016 = league_rate.loc[2016, col]
-    lgstat_2017 = league_rate.loc[2017, col]
-    lgstat_2018 = league_rate.loc[2018, col]
+    lgstat_m3 = league_rate.loc[m3, col]
+    lgstat_m2 = league_rate.loc[m2, col]
+    lgstat_m1 = league_rate.loc[m1, col]
 
-    lg_play_stat = ((lgstat_2016 * pa_2016 * 3) +
-                    (lgstat_2017 * pa_2017 * 4) +
-                    (lgstat_2018 * pa_2018 * 5))
+    lg_play_stat = ((lgstat_m3 * pa_m3 * 3) +
+                    (lgstat_m2 * pa_m2 * 4) +
+                    (lgstat_m1 * pa_m1 * 5))
     # print(lg_play_stat)
 
     lps_1200 = (lg_play_stat * 1200) / weighted_pa
@@ -97,15 +141,15 @@ projected_slg = round((projected_tb / projected_ab), 3)
 print(f"Projected Slash Line: {projected_avg}/{projected_obp}/{projected_slg}")
 
 wOBA_num = ((0.690 * (projected_stats[8] - projected_stats[14])) +
-            (0.720 * projected_stats[11]) + (.880 * projected_1b) +
-            (1.247 * projected_stats[2]) + (1.578 * projected_stats[3]) +
-            (2.031 * projected_stats[4]))
+            (0.719 * projected_stats[11]) + (.870 * projected_1b) +
+            (1.217 * projected_stats[2]) + (1.529 * projected_stats[3]) +
+            (1.940 * projected_stats[4]))
 
 wOBA_den = (projected_ab + projected_stats[8] - projected_stats[14] +
             projected_stats[13] + projected_stats[11])
 
 wOBA = round(wOBA_num / wOBA_den, 3)
-print(f"wOBA(2018 weightings): {wOBA}")
+print(f"wOBA(2019 weightings): {wOBA}")
 
-wRAA = round(((wOBA - 0.315) / 1.226) * projected_pa, 2)
-print(f"wRAA(2018 weightings): {wRAA}")
+wRAA = round(((wOBA - 0.320) / 1.157) * projected_pa, 2)
+print(f"wRAA(2019 weightings): {wRAA}")
